@@ -1,0 +1,119 @@
+.macro yingyang(%address,%position,%tempo1,%tempo2,%tempo3,%tempo,%mask)
+	addi %address,%address,8
+	lb %tempo,0(%position)
+	add %position,%tempo,%position
+	lb %position,1(%position)
+	
+	add %position,%address,%position
+	lw %position,0(%position)
+	addi %address,%address,16
+	li %tempo1,0
+	li %tempo2,0
+	li %tempo3,16
+	li %mask,-1
+	
+YY:	beq %tempo1,%tempo3,END_YY
+	beq %tempo2,%tempo3,CORRECTION_YY
+	lb %tempo,0(%address)
+	beq %tempo,%mask,MASK_YY
+	sb %tempo,0(%position)
+MASK_YY:
+	addi %tempo2,%tempo2,1
+	addi %address,%address,1
+	addi %position,%position,1
+	j YY
+CORRECTION_YY:
+	li %tempo2,0
+	addi %tempo1,%tempo1,1
+	addi %position,%position,304
+	j YY
+END_YY:
+	
+.end_macro
+
+.macro compare_squares(%address1,%address2,%tempo1,%tempo2,%tempo3,%tempo4,%return)
+	lw %tempo1,0(%address1)
+	lw %tempo2,4(%address1)
+	lw %tempo3,0(%address2)
+	lw %tempo4,4(%address2)
+	
+	bgt %tempo3,%tempo1,IF_MAX_X
+	j ELSE_MAX_X
+IF_MAX_X:	
+	mv %tempo1,%tempo3
+ELSE_MAX_X:
+	blt %tempo4,%tempo2,IF_MIN_X
+	j ELSE_MIN_X
+IF_MIN_X:	
+	mv %tempo2,%tempo4
+ELSE_MIN_X:
+	li %return,0
+	bge %tempo2,%tempo1,IF_COMPARE_X
+	j ELSE_COMPARE_X
+IF_COMPARE_X:
+	li %return,1
+ELSE_COMPARE_X:
+	
+	lw %tempo1,8(%address1)
+	lw %tempo2,12(%address1)
+	lw %tempo3,8(%address2)
+	lw %tempo4,12(%address2)
+	
+	bgt %tempo3,%tempo1,IF_MAX_Y
+	j ELSE_MAX_Y
+IF_MAX_Y:	
+	mv %tempo1,%tempo3
+ELSE_MAX_Y:
+	blt %tempo4,%tempo2,IF_MIN_Y
+	j ELSE_MIN_Y
+IF_MIN_Y:	
+	mv %tempo2,%tempo4
+ELSE_MIN_Y:
+	bge %tempo2,%tempo1,IF_COMPARE_Y
+	j ELSE_COMPARE_Y
+IF_COMPARE_Y:
+	andi %return,%return,1
+	j END_COMPARE
+ELSE_COMPARE_Y:
+	li %return,0
+END_COMPARE:		
+.end_macro
+
+.data
+vetor1: .word  2,3,1,2
+vetor2: .word  1,5,1,4
+
+p1_yingyang: .byte 0,0,4
+p2_yingyang: .byte 0,8,12
+
+.include "yingyang.s"
+
+.text
+	la s0,vetor1
+	la s1,vetor2
+	compare_squares(s0,s1,t0,t1,t2,t3,a0)
+
+	li s2,0xFF000000
+	li s3,0xFF012C00
+	li t0,0xFFFFFFFF
+LOOP:	beq s2,s3,END
+	sw t0,0(s2)
+	addi s2,s2,4
+	j LOOP
+END:	
+	la s0,yingyang
+	la s1,p1_yingyang
+	
+	yingyang(s0,s1,t0,t1,t2,t3,t4)
+	la s0,yingyang
+	la s1,p1_yingyang
+	lb t0,0(s1)
+	addi t0,t0,1
+	sb t0,0(s1)
+	yingyang(s0,s1,t0,t1,t2,t3,t4)
+	
+	li a7,1
+	ecall
+	li a7,10
+	ecall
+
