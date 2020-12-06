@@ -1,10 +1,14 @@
 .data
+pontos: .byte 0,0
 clocks: .word 0 , 0 
 current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
+high_punch_hurt: .half 31,36,6,11
+p2_hitbox: .half 14,31,0,51
+
+.include "yingyang.s"
 .include "\animacoes\high_punch\high_punch.s"
 .include "\animacoes\jab\jab.s"
-.include "\animacoes\high_kick\high_kick.s"
 .include "\animacoes\player1idle.s"
 .include "\animacoes\player2idle.s"
 .include "stage.s"
@@ -15,7 +19,144 @@ animation_state: .byte 0,0,0,0
 .include "\animacoes\start\stance2.s"
 .include "\MACROSv21.s"
 
+.macro conti_ani()
+	mv a6,s3
+	la t0,current_animation
+	sw t6,0(t0)
+	mv s0,s9
+	li t5,1
+	advance_animation(s3,t5)
+	image(s3,s0,s1,s2)
 	
+	la t0,animation_state
+	li t1,1
+	lb t2,0(t6)
+	sb t1,0(t0)
+	sb t2,1(t0)
+	la t0,animation_state
+.end_macro
+
+.macro pontos()
+	la s0,yingyang
+	la t0,pontos
+	lb t0,0(t0)
+	beq t0,zero,NEXT_YY
+	addi t0,t0,-1
+	li t1,640
+	mul t0,t0,t1
+	add s0,s0,t0
+	
+	li s8,0x2828
+	add s8,s10,s8
+					#frame changer
+	li t0,0
+	li t1,0
+	li t3,-1
+	li s1,40
+	li s2,16
+YY:	beq t0,s2,NEXT_YY
+	beq t1,s1,CORRE_YY
+		lb t4,0(s0)
+		beq t4,t3,MASK_YY
+		sb t4,0(s8)
+		addi s0,s0,1
+		addi s8,s8,1
+		addi t1,t1,1
+		j YY
+MASK_YY:
+		addi s0,s0,1
+		addi s8,s8,1
+		addi t1,t1,1
+		j YY
+CORRE_YY:
+	li t1,0
+	addi s8,s8,280
+	addi t0,t0,1
+	j YY
+NEXT_YY:
+	la s0,yingyang
+	addi s0,s0,1920
+	addi s0,s0,640
+	la t0,pontos
+	lb t0,1(t0)
+	beq t0,zero,END_YY	
+	addi t0,t0,-1
+	li t1,640
+	mul t0,t0,t1
+	add s0,s0,t0
+	
+	li s8,0x2828
+	add s8,s10,s8 
+	
+	li t0,0
+	li t1,0
+	li s1,40
+	li s2,16
+YY1:	beq t0,s2,END_YY
+	beq t1,s1,CORRE_YY1
+		lb t4,0(s0)
+		beq t4,t3,MASK_YY1
+		sb t4,0(s8)
+		addi s0,s0,1
+		addi s8,s8,1
+		addi t1,t1,1
+		j YY1
+MASK_YY1:
+		addi s0,s0,1
+		addi s8,s8,1
+		addi t1,t1,1
+		j YY1
+CORRE_YY1:
+	li t1,0
+	addi s8,s8,280
+	addi t0,t0,1
+	j YY1
+END_YY:
+.end_macro
+
+.macro check_hitbox(%hurt, %hit, %phurt, %phit)    #macro para checar colisao entre hitboxes
+    li a0,0                    #hitboxes sao .half x1,x2,y1,y2
+    #ys das hitboxes            #retorna a0 = 0 se falso, a0 = 1 se verdadeiro, a0 = 2 se for golpe perfeito
+    lh t0,4(%hurt)
+    lh t1,6(%hurt)
+    lh t2,4(%hit)
+    lh t3,6(%hit)
+    sub t4,s10,%phurt
+    li t5,320
+    div t4,t4,t5
+    add t0,t0,t4
+    add t1,t1,t4
+    sub t4,s10,%phit
+    div t4,t4,t5
+    add t2,t2,t4
+    add t3,t3,t4
+    blt t3,t0,END
+    bgt t2,t1,END
+    
+    #xs das hitboxes
+    lh t0,0(%hurt)
+    lh t1,2(%hurt)
+    lh t2,0(%hit)
+    lh t3,2(%hit)
+    sub t4,s10,%phurt
+    li t5,320
+    rem t4,t4,t5
+    add t0,t0,t4
+    add t1,t1,t4
+    sub t4,s10,%phit
+    div t4,t4,t5
+    add t2,t2,t4
+    add t3,t3,t4
+    blt t3,t0,END
+    bgt t2,t1,END
+    
+    li a0,1
+    bne t1,t2,END
+    li a0,2
+
+END:
+.end_macro
+
 .macro stage()
 	mv t1,a5
 	addi t1,t1,8
@@ -126,7 +267,7 @@ No_Press:
 	lw t0,0(t2)
 	lw t1,4(t2)
 	li t4,1000
-	ble t0,zero,ELSE		#ELSE -> END
+	ble t0,zero,ELSE		#ELSE -> NEXT_STAGE
 	li a7,30
 	ecall
 	sub t3,a0,t1		
@@ -165,6 +306,14 @@ CONTI_IF:
 	sb t1,0(t6)
 	advance_animation(s3,t1)
 	image(s3,s0,s1,s2)
+	lb t1,0(t6)
+	lb t2,1(t6)
+	bne t1,t2,NO_HIT
+	la s1,high_punch_hurt
+        la s2,p2_hitbox
+        check_hitbox(s1,s2,s9,s6)
+	j HIT
+NO_HIT:
 	j MAIN
 ESTA:	
 	beq t5,a6,ESTA_IF
@@ -179,13 +328,14 @@ CONTI:
 .end_macro
 
 .text	
-	li s5,0		#current state player 1
+	li s5,0	
+		
 	li s6,0xFF00C775 	#current position player 2
 	li s7,0xFF200000	#Key state
 	li s9,0xFF00C5D4	#current position player 1
 	li s10,0xFF000000	#start of the screen
 	li s11,0xFF012C00	#end of the screen
-	la a5,stage2	
+	la a5,stage1	
 		
 	start_animation()
 	
@@ -212,6 +362,7 @@ MAIN:			#frame change
 	frame_changer()
 	
 	stage()
+	pontos()
 	
 	la t2,clocks
 	lw a0,0(t2)	
@@ -219,9 +370,9 @@ MAIN:			#frame change
 	li a7,101	#li a7,101 muda o valor s8
 	ecall		
 	
-	#la s3,player2idle
-	#mv s0,s6
-	#image(s3,s0,s1,s2)
+	la s3,player2idle
+	mv s0,s6
+	image(s3,s0,s1,s2)
 	
 	animation()
 	
@@ -235,12 +386,22 @@ MAIN:			#frame change
 	beq t5,s3,C
 	li s3,120
 	beq t5,s3,X
-	la s3,player1idle			#
+IDLE1:	la s3,player1idle			#
 	mv s0,s9				#          IDLE		
 	image(s3,s0,s1,s2)			#
 	
 j MAIN
 
+HIT:
+	beq a0,zero,MAIN
+	la t0,pontos
+	li t1,5
+	lb t2,0(t0)
+	addi t2,t2,1
+	rem t2,t2,t1
+	sb t2,0(t0)
+	j MAIN
+	
 D:	la s3,walk1
 	addi s0,s9,4			
 	addi s9,s9,4
@@ -254,56 +415,16 @@ A:	la s3,walk_1
 	j MAIN
 	
 E:	la t6,high_punch
-	la t0,current_animation
-	sw t6,0(t0)
-	mv s0,s9
-	li t5,1
-	advance_animation(s3,t5)
-	image(s3,s0,s1,s2)
-	
-	la t0,animation_state
-	li t1,1
-	lb t2,0(t6)
-	sb t1,0(t0)
-	sb t2,1(t0)
-	la t0,animation_state
-	
-	li a6,101
+	conti_ani()
 	j MAIN
 
 C:	la t6,jab
-	la t0,current_animation
-	sw t6,0(t0)
-	mv s0,s9
-	li t5,1
-	advance_animation(s3,t5)
-	image(s3,s0,s1,s2)
-	
-	la t0,animation_state
-	li t1,1
-	lb t2,0(t6)
-	sb t1,0(t0)
-	sb t2,1(t0)
-	la t0,animation_state
-	
-	li a6,99
+	conti_ani()
 	j MAIN
 X:	la t6,low_punch
-	la t0,current_animation
-	sw t6,0(t0)
-	mv s0,s9
-	li t5,1
-	advance_animation(s3,t5)
-	image(s3,s0,s1,s2)
-	
-	la t0,animation_state
-	li t1,1
-	lb t2,0(t6)
-	sb t1,0(t0)
-	sb t2,1(t0)
-	la t0,animation_state
-	
+	conti_ani()
 	li a6,99
 	j MAIN
 
 .include "\SYSTEMv21.s"
+
