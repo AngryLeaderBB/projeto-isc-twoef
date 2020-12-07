@@ -3,9 +3,8 @@ pontos: .byte 0,0
 clocks: .word 0 , 0 
 current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
-high_punch_hurt: .half 31,36,6,11
-p2_hitbox: .half 14,31,0,51
 
+.include "\hitboxes.s"
 .include "yingyang.s"
 .include "\animacoes\high_punch\high_punch.s"
 .include "\animacoes\jab\jab.s"
@@ -18,6 +17,16 @@ p2_hitbox: .half 14,31,0,51
 .include "\animacoes\start\stance1.s"
 .include "\animacoes\start\stance2.s"
 .include "\MACROSv21.s"
+
+.macro stack_push(%reg)
+	addi sp,sp,-8
+	sw %reg,0(sp)
+.end_macro
+
+.macro stack_pop(%reg)
+	lw %reg,0(sp)
+	addi sp,sp,8
+.end_macro
 
 .macro conti_ani()
 	mv a6,s3
@@ -309,7 +318,7 @@ CONTI_IF:
 	lb t1,0(t6)
 	lb t2,1(t6)
 	bne t1,t2,NO_HIT
-	la s1,high_punch_hurt
+	stack_pop(s1)	#pega o endereco da hurtbox da stack
         la s2,p2_hitbox
         check_hitbox(s1,s2,s9,s6)
 	j HIT
@@ -415,10 +424,18 @@ A:	la s3,walk_1
 	j MAIN
 	
 E:	la t6,high_punch
+
+	la t1,high_punch_hurt
+	stack_push(t1)	#coloca o endereco da hurtbox do ataque na stack
+	
 	conti_ani()
 	j MAIN
 
 C:	la t6,jab
+	
+	la t1,jab_hurt
+	stack_push(t1)	#coloca o endereco da hurtbox do ataque na stack
+
 	conti_ani()
 	j MAIN
 X:	la t6,low_punch
