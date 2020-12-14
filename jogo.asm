@@ -469,7 +469,7 @@ WALK_CONTI:
 .end_macro
 
 .macro theme()
-	li s1,16				
+	li s1,21				
 	la s0,NOTAS		
 	li t0,0			
 	li a2,7		
