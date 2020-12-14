@@ -8,7 +8,7 @@ current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
 high_punch_hurt: .half 31,36,6,11
 p2_hitbox: .half 14,31,0,51
-NOTAS: .word 67,250,67,250,65,250,65,250,67,250,65,250,67,500,69,125,70,125,69,125,70,125,69,125,70,125,69,125,70,125,69,500
+NOTAS: .word 62,270,62,270,59,270,59,270,57,270,57,270,59,270,59,270,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,600
 .include "yingyang.s"
 .include "\animacoes\jump\jump.s"
 .include "\animacoes\high_punch\high_punch.s"
@@ -472,7 +472,7 @@ WALK_CONTI:
 	li s1,16				
 	la s0,NOTAS		
 	li t0,0			
-	li a2,96		
+	li a2,7		
 	li a3,127		
 
 LOOPM:	beq t0,s1, FIM		
