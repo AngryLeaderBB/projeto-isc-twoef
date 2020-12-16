@@ -7,8 +7,7 @@ clock_color: .half 0xf800,0x0700,0xf800
 cc: .byte 0
 current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
-high_punch_hurt: .half 31,36,6,11
-p2_hitbox: .half 14,31,0,51
+op_level: .byte 0
 NOTAS: .word 62,270,62,270,59,270,59,270,57,270,57,270,59,270,59,270,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,600
 fases: .word -1
 dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN"," 6TH DAN"," 7TH DAN"," 8TH DAN"," 9TH DAN","10TH DAN"
@@ -34,7 +33,72 @@ dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN","
 .include "\animacoes\round_house\round_house.s"
 .include "\animacoes\high_back_kick\high_back_kick.s"
 .include "\animacoes\walk\walk2.s"
+.include "hitboxes.s"
 .include "\MACROSv21.s"
+
+.macro draw_line(%x1,%x2,%y1,%y2)
+	mv a0,%x1
+	mv a1,%y1
+	mv a2,%x2
+	mv a3,%y2
+	li a4,0xFF
+	li a5,0
+	li a7,47
+	ecall
+	li a5,1
+	ecall
+.end_macro
+
+.macro draw_hitbox(%box,%pos)
+	stack_push(a0)
+	stack_push(a1)
+	stack_push(a2)
+	stack_push(a3)
+	stack_push(a4)
+	stack_push(a5)
+	lh t0,0(%box)
+	lh t1,2(%box)
+	lh t2,4(%box)
+	lh t3,6(%box)
+	li t6,0xFF000000
+	xor t4,%pos,t6
+	li t5,320
+	rem t4,t4,t5
+	add t0,t0,t4
+	add t1,t1,t4
+	xor t4,%pos,t6
+	li t5,320
+	div t4,t4,t5
+	add t2,t2,t4
+	add t3,t3,t4
+	draw_line(t0,t1,t2,t2)
+	draw_line(t0,t0,t2,t3)
+	draw_line(t1,t1,t2,t3)
+	draw_line(t0,t1,t3,t3)
+	stack_pop(a5)
+	stack_pop(a4)
+	stack_pop(a3)
+	stack_pop(a2)
+	stack_pop(a1)
+	stack_pop(a0)
+.end_macro
+
+.macro get_op_level()
+	li a7,5
+	ecall
+	la t0,op_level
+	sb a0,0(t0)
+.end_macro
+
+.macro stack_push(%reg)
+	addi sp,sp,-8
+	sw %reg,0(sp)
+.end_macro
+
+.macro stack_pop(%reg)
+	lw %reg,0(sp)
+	addi sp,sp,8
+.end_macro
 
 .macro conti_ani()
 	mv a6,s3
@@ -66,7 +130,6 @@ dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN","
 	sb t1,2(t0)
 	sb t2,3(t0)
 .end_macro
-
 .macro pontos()
 	la s0,yingyang
 	la t0,pontos
@@ -139,12 +202,18 @@ END_YY:
     lh t1,6(%hurt)
     lh t2,4(%hit)
     lh t3,6(%hit)
+    
+    #xor t4,%phurt,s10
     sub t4,s10,%phurt
+    
     li t5,320
     div t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
+    
+    #xor t4,%phit,s10
     sub t4,s10,%phit
+    
     div t4,t4,t5
     add t2,t2,t4
     add t3,t3,t4
@@ -156,11 +225,15 @@ END_YY:
     lh t1,2(%hurt)
     lh t2,0(%hit)
     lh t3,2(%hit)
+    
+    #xor t4,%phurt,s10
     sub t4,s10,%phurt
     li t5,320
     rem t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
+    
+    #xor t4,%phit,s10
     sub t4,s10,%phit
     div t4,t4,t5
     add t2,t2,t4
@@ -351,9 +424,11 @@ CONTI_IF:
 	lb t1,0(t6)
 	lb t2,1(t6)
 	bne t1,t2,NO_HIT
-	la s1,high_punch_hurt
+	stack_pop(s1)
         la s2,p2_hitbox
         check_hitbox(s1,s2,s9,s6)
+        draw_hitbox(s1,s9)
+        draw_hitbox(s2,s6)
 	j HIT
 NO_HIT:
 	j MAIN
@@ -368,8 +443,6 @@ ESTA_IF:
 CONTI:	
 	
 .end_macro
-
-
 
 .macro next_stage()
 	la t0,stages
@@ -561,7 +634,6 @@ FIM:
 	li s7,0xFF200000	#Key state
 	li s10,0xFF000000	#start of the screen
 	li s11,0xFF012C00	#end of the screen
-	
 	j NEXT_STAGE
 Y:	
 	la t6,high_punch2
@@ -607,6 +679,7 @@ KEYS1:
 ###########
 NEXT_STAGE:
 	theme()
+	#get_op_level()
 	la t0,animation_state
 	sb zero,0(t0)
 	sb zero,2(t0)
@@ -647,8 +720,7 @@ NEXT_STAGE:
 	
 	start_animation()
 	li a2,60	
-	
-	
+
 	la t1,clocks
 	li t0,30		
 	sw t0,0(t1)
@@ -663,12 +735,22 @@ NEXT_STAGE:
 ########
 	
 MAIN:			#frame change		
+
+	#botar IA aqui
 	keyboard(t5)
 	dan()
 	clock()
 	frame_changer()
 	stage()
 	pontos()
+	
+	#####
+	#mv a1,s9
+	#la t0,op_level
+	#lb t0,0(t0)
+	#jal p2_ctrl
+	#####
+	
 	
 	la t2,clocks
 	lw a0,0(t2)	
@@ -708,7 +790,6 @@ PLAYER1:
 	jump()
 	animation()
 KEY_CHECK:
-	
 	li s3,100
 	beq t5,s3,D				#
 	li s3,97				#
@@ -786,10 +867,12 @@ E:	la t6,high_punch
 
 C:	la t6,jab
 	j KEYS
+
 X:	la t6,low_punch
 	conti_ani()
 	li a6,99
 	j MAIN
+
 W:	la t6,jump
 	addi t6,t6,1
 	j KEYS
@@ -810,4 +893,5 @@ q:	la t6,high_back_kick
 	j KEYS
 KEYS:	conti_ani()
 	j MAIN
+#.include "levels.s"
 .include "\SYSTEMv21.s"
