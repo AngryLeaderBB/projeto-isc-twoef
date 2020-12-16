@@ -230,6 +230,21 @@ ESTA_IF2:
 CONTI2:	
 .end_macro
 
+.macro conti_ani()
+	mv a6,s3
+	la t0,current_animation
+	sw t6,0(t0)
+	mv s0,s9
+	li t5,1
+	advance_animation(s3,t5)
+	image(s3,s0,s1,s2)
+	
+	la t0,animation_state
+	li t1,1
+	lb t2,0(t6)
+	sb t1,0(t0)
+	sb t2,1(t0)
+.end_macro
 
 .data
 pontos: .byte 1,1
@@ -242,7 +257,8 @@ teste: .string "teste"
 .include "\animacoes\Foward_Somesault\P1\Foward_Somesault_P1.s"
 .include "\animacoes\player1idle.s"
 .include "stage.s"
-.include "\MACROSv21.s"
+.include "\animacoes\walk\walk.s"
+#.include "\MACROSv21.s"
 .text
 	
 	li s9,0xFF00C5D4	
@@ -251,9 +267,30 @@ teste: .string "teste"
 	
 	refresh()
 	
-	pontos()
-	dan()
+	la s3,walk
+	la t0,current_animation
+	sw s3,0(t0)
+	li t1,5
+	advance_animation(s3,t1)
+	mv s0,s9
+	image(s3,s0,s1,s2)
+	addi s9,s9,50
+	li t1,6
+	advance_animation(s3,t1)
+	mv s0,s9
+	image(s3,s0,s1,s2)
+	addi s9,s9,50
+	li t1,7
+	advance_animation(s3,t1)
+	mv s0,s9
+	image(s3,s0,s1,s2)
+	addi s9,s9,50
+	li t1,9
+	advance_animation(s3,t1)
+	mv s0,s9
+	addi s9,s9,50
+	image(s3,s0,s1,s2)
 	li a7,10
 	ecall
 
-.include "\SYSTEMv21.s"
+#.include "\SYSTEMv21.s"
