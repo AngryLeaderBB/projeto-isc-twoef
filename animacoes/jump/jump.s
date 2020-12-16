@@ -1,5 +1,5 @@
 jump: 
-.byte 4
+.byte 4,4
 .word 20, 1428, 3308, 5368
 
 .word 28, 50
