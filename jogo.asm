@@ -1,22 +1,84 @@
 .data
 pontos: .byte 0,0
+stages: .byte 2
 clocks: .word 0 , 0 
+clock_color: .half 0xf800,0x0700,0xf800
+cc: .byte 0
 current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
-
-.include "\hitboxes.s"
+op_level: .byte 0
+NOTAS: .word 62,270,62,270,59,270,59,270,57,270,57,270,59,270,59,270,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,600
 .include "yingyang.s"
-.include "\animacoes\high_punch\high_punch.s"
-.include "\animacoes\jab\jab.s"
-.include "\animacoes\player1idle.s"
-.include "\animacoes\player2idle.s"
+.include "animacoes/jump/jump.s"
+.include "animacoes/high_punch/high_punch.s"
+.include "animacoes/high_punch/high_punch2.s"
+.include "animacoes/jab/jab.s"
+.include "animacoes/jab/jab2.s"
+.include "animacoes/kick/kick.s"
+.include "animacoes/player1idle.s"
+.include "animacoes/player2idle.s"
 .include "stage.s"
-.include "\animacoes\crounch\low_punch.s"
-.include "\animacoes\walk\walk1.s"
-.include "\animacoes\walk\walk_1.s"
-.include "\animacoes\start\stance1.s"
-.include "\animacoes\start\stance2.s"
-.include "\MACROSv21.s"
+.include "animacoes/crounch/low_punch.s"
+.include "animacoes/walk/walk1.s"
+.include "animacoes/walk/walk_1.s"
+.include "animacoes/start/stance1.s"
+.include "animacoes/foward_sweep/foward_sweep.s"
+.include "hitboxes.s"
+.include "MACROSv21.s"
+
+.macro draw_line(%x1,%x2,%y1,%y2)
+	mv a0,%x1
+	mv a1,%y1
+	mv a2,%x2
+	mv a3,%y2
+	li a4,0xFF
+	li a5,0
+	li a7,47
+	ecall
+	li a5,1
+	ecall
+.end_macro
+
+.macro draw_hitbox(%box,%pos)
+	stack_push(a0)
+	stack_push(a1)
+	stack_push(a2)
+	stack_push(a3)
+	stack_push(a4)
+	stack_push(a5)
+	lh t0,0(%box)
+	lh t1,2(%box)
+	lh t2,4(%box)
+	lh t3,6(%box)
+	li t6,0xFF000000
+	xor t4,%pos,t6
+	li t5,320
+	rem t4,t4,t5
+	add t0,t0,t4
+	add t1,t1,t4
+	xor t4,%pos,t6
+	li t5,320
+	div t4,t4,t5
+	add t2,t2,t4
+	add t3,t3,t4
+	draw_line(t0,t1,t2,t2)
+	draw_line(t0,t0,t2,t3)
+	draw_line(t1,t1,t2,t3)
+	draw_line(t0,t1,t3,t3)
+	stack_pop(a5)
+	stack_pop(a4)
+	stack_pop(a3)
+	stack_pop(a2)
+	stack_pop(a1)
+	stack_pop(a0)
+.end_macro
+
+.macro get_op_level()
+	li a7,5
+	ecall
+	la t0,op_level
+	sb a0,0(t0)
+.end_macro
 
 .macro stack_push(%reg)
 	addi sp,sp,-8
@@ -42,9 +104,22 @@ animation_state: .byte 0,0,0,0
 	lb t2,0(t6)
 	sb t1,0(t0)
 	sb t2,1(t0)
-	la t0,animation_state
 .end_macro
-
+.macro conti_ani2()
+	mv s5,s3
+	la t0,current_animation
+	sw t6,4(t0)
+	mv s0,s6
+	li t5,1
+	advance_animation2(s3,t5)
+	image(s3,s0,s1,s2)
+	
+	la t0,animation_state
+	li t1,1
+	lb t2,0(t6)
+	sb t1,2(t0)
+	sb t2,3(t0)
+.end_macro
 .macro pontos()
 	la s0,yingyang
 	la t0,pontos
@@ -60,22 +135,15 @@ animation_state: .byte 0,0,0,0
 					#frame changer
 	li t0,0
 	li t1,0
-	li t3,-1
 	li s1,40
 	li s2,16
 YY:	beq t0,s2,NEXT_YY
 	beq t1,s1,CORRE_YY
-		lb t4,0(s0)
-		beq t4,t3,MASK_YY
-		sb t4,0(s8)
-		addi s0,s0,1
-		addi s8,s8,1
-		addi t1,t1,1
-		j YY
-MASK_YY:
-		addi s0,s0,1
-		addi s8,s8,1
-		addi t1,t1,1
+		lw t4,0(s0)
+		sw t4,0(s8)
+		addi s0,s0,4
+		addi s8,s8,4
+		addi t1,t1,4
 		j YY
 CORRE_YY:
 	li t1,0
@@ -103,17 +171,11 @@ NEXT_YY:
 	li s2,16
 YY1:	beq t0,s2,END_YY
 	beq t1,s1,CORRE_YY1
-		lb t4,0(s0)
-		beq t4,t3,MASK_YY1
-		sb t4,0(s8)
-		addi s0,s0,1
-		addi s8,s8,1
-		addi t1,t1,1
-		j YY1
-MASK_YY1:
-		addi s0,s0,1
-		addi s8,s8,1
-		addi t1,t1,1
+		lw t4,0(s0)
+		sw t4,0(s8)
+		addi s0,s0,4
+		addi s8,s8,4
+		addi t1,t1,4
 		j YY1
 CORRE_YY1:
 	li t1,0
@@ -130,12 +192,18 @@ END_YY:
     lh t1,6(%hurt)
     lh t2,4(%hit)
     lh t3,6(%hit)
+    
+    #xor t4,%phurt,s10
     sub t4,s10,%phurt
+    
     li t5,320
     div t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
+    
+    #xor t4,%phit,s10
     sub t4,s10,%phit
+    
     div t4,t4,t5
     add t2,t2,t4
     add t3,t3,t4
@@ -147,11 +215,15 @@ END_YY:
     lh t1,2(%hurt)
     lh t2,0(%hit)
     lh t3,2(%hit)
+    
+    #xor t4,%phurt,s10
     sub t4,s10,%phurt
     li t5,320
     rem t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
+    
+    #xor t4,%phit,s10
     sub t4,s10,%phit
     div t4,t4,t5
     add t2,t2,t4
@@ -168,7 +240,7 @@ END:
 
 .macro stage()
 	mv t1,a5
-	addi t1,t1,8
+	#addi t1,t1,8
 	mv t0,s10
 STAGE:	bge t0,s11,END_STAGE
 	lw t2,0(t1)
@@ -242,16 +314,33 @@ No_Press:
 	add %image_adress,%image_adress,t0
 .end_macro
 
+.macro advance_animation2(%image_adress,%time)
+	la t0,current_animation
+	lw t0,4(t0)
+	li %image_adress,4
+	mul %image_adress,%image_adress,%time
+	add %image_adress,%image_adress,t0
+	lw %image_adress,0(%image_adress)
+	add %image_adress,%image_adress,t0
+.end_macro
+
 .macro start_animation()	
 	stage()
 	
 	la s3,stance1
 	mv s0,s9
 	image(s3,s0,s1,s2)
+	la s3,stance3
+	mv s0,s6
+	addi s0,s0,16
+	image(s3,s0,s1,s2)
 	frame_changer()
 	stage()
 	la s3,stance2
 	mv s0,s9
+	image(s3,s0,s1,s2)
+	la s3,stance4
+	mv s0,s6
 	image(s3,s0,s1,s2)
 	li a0,250
 	li a7,32
@@ -260,6 +349,10 @@ No_Press:
 	stage()
 	la s3,stance1
 	mv s0,s9
+	image(s3,s0,s1,s2)
+	la s3,stance3
+	mv s0,s6
+	addi s0,s0,16
 	image(s3,s0,s1,s2)
 	li a0,250
 	li a7,32
@@ -276,7 +369,7 @@ No_Press:
 	lw t0,0(t2)
 	lw t1,4(t2)
 	li t4,1000
-	ble t0,zero,ELSE		#ELSE -> NEXT_STAGE
+	ble t0,zero,NEXT_STAGE		#ELSE -> NEXT_STAGE
 	li a7,30
 	ecall
 	sub t3,a0,t1		
@@ -295,6 +388,7 @@ ELSE:
 
 
 .macro animation()
+	
 	la t6,animation_state
 	lb t1,0(t6)
 	lb t2,1(t6)
@@ -318,9 +412,11 @@ CONTI_IF:
 	lb t1,0(t6)
 	lb t2,1(t6)
 	bne t1,t2,NO_HIT
-	stack_pop(s1)	#pega o endereco da hurtbox da stack
+	stack_pop(s1)
         la s2,p2_hitbox
         check_hitbox(s1,s2,s9,s6)
+        draw_hitbox(s1,s9)
+        draw_hitbox(s2,s6)
 	j HIT
 NO_HIT:
 	j MAIN
@@ -336,21 +432,182 @@ CONTI:
 	
 .end_macro
 
+.macro animation2()
+
+	
+	la t6,animation_state
+	lb t1,2(t6)
+	lb t2,3(t6)
+
+	beq t1,zero,CONTI2
+	mv s0,s6
+	beq t1,t2,ESTA2
+	beq t5,s5,CONTI_IF2		
+			
+	addi t1,t1,-1
+	sb t1,2(t6)
+	beq t1,zero,CONTI2
+	advance_animation2(s3,t1)
+	image(s3,s0,s1,s2)
+	j PLAYER1
+CONTI_IF2:
+
+	addi t1,t1,1
+	sb t1,2(t6)
+	advance_animation2(s3,t1)
+	image(s3,s0,s1,s2)
+	j PLAYER1
+ESTA2:	
+	beq t5,s5,ESTA_IF2
+	addi t1,t1,-1
+	sb t1,2(t6)
+ESTA_IF2:
+	advance_animation2(s3,t1)
+	image(s3,s0,s1,s2)
+	j PLAYER1
+CONTI2:	
+.end_macro
+
+.macro next_stage()
+	la t0,stages
+	lb t3,0(t0)
+	li t2,3
+	addi t3,t3,1
+	rem t3,t3,t2
+	sb t3,0(t0)
+	la t0,stage
+	li t1, 76800
+	mul t1,t1,t3
+	add a5,t0,t1
+	
+.end_macro
+
+.macro jump()
+	li t6,119
+	beq a6,t6,JUMP 
+	li t6,87
+	beq a6,t6,JUMP
+	j CONTI_JUMP
+JUMP:	la t6,animation_state
+	lb t1,0(t6)
+	lb t2,1(t6)
+	addi t1,t1,1
+	sb t1,0(t6)
+	
+	slli t2,t2,1
+	
+	beq t1,zero,CONTI_JUMP
+	mv s0,s9
+	bge t1,t2,KEY_CHECK
+	
+	srai t2,t2,1
+	
+	bgt t1,t2,IF_JUMP
+	
+	mv t3,t1
+	j ELSE_JUMP
+IF_JUMP:
+	slli t2,t2,1
+	sub t3,t2,t1
+ELSE_JUMP:
+	
+	advance_animation(s3,t3)
+	image(s3,s0,s1,s2)
+	j MAIN
+CONTI_JUMP:	
+	
+.end_macro
+
+.macro walk()
+	li t3,100
+	beq t5,t3,WALK
+	j WALK_CONTI
+
+WALK:	bne a6,t3,KEY_CHECK
+	la t6,animation_state
+	lb t1,0(t6)
+	lb t2,1(t6)
+	beq t1,t2,WALK_IF
+	addi s9,s9,4
+	addi t1,t1,1
+	sb t1,0(t6)
+	mv s0,s9
+	advance_animation(s3,t1)
+	image(s3,s0,s1,s2)
+	j MAIN
+WALK_IF:	
+	li t1,1
+	sb t1,0(t6)
+	addi s9,s9,4
+	j KEY_CHECK
+WALK_CONTI:	
+	
+.end_macro
+
+.macro theme()
+	li s1,21				
+	la s0,NOTAS		
+	li t0,0			
+	li a2,7		
+	li a3,127		
+
+LOOPM:	beq t0,s1, FIM		
+	lw a0,0(s0)		
+	lw a1,4(s0)		
+	li a7,31		
+	ecall			
+	mv a0,a1		
+	li a7,32		
+	ecall			
+	addi s0,s0,8		
+	addi t0,t0,1		
+	j LOOPM			
+FIM:	
+.end_macro
+
 .text	
 	li s5,0	
-		
-	li s6,0xFF00C775 	#current position player 2
+	li a3,0x0700
 	li s7,0xFF200000	#Key state
-	li s9,0xFF00C5D4	#current position player 1
 	li s10,0xFF000000	#start of the screen
 	li s11,0xFF012C00	#end of the screen
-	la a5,stage1	
-		
-	start_animation()
 	
 ###########
-	li a3,0x38
+NEXT_STAGE:
+	theme()
+	#get_op_level()
+	li s6,0xFF00C775 	#current position player 2
+	li s9,0xFF00C5D4	#current position player 1
+	li t0,0x100000
+	mul t0,t0,a4
+	or s6,s6,t0
+	or s9,s9,t0
+
+	
+	la t0,pontos
+	sb zero,0(t0)
+	sb zero,0(t0)
+	next_stage()
+	
+	la t0,cc
+	lb t1,0(t0)
+	
+	la t0,clock_color
+	li t2,2
+	mul t2,t1,t2
+	add t0,t0,t2
+	lh a3,0(t0)
+	
+	la t0,cc
+	addi t1,t1,1
+	li t2,3
+	rem t1,t1,t2
+	sb t1,0(t0)
+	
+	
+	start_animation()
 	li a2,25
+	
 	
 	la t1,clocks
 	li t0,30		
@@ -366,25 +623,39 @@ CONTI:
 ########
 	
 MAIN:			#frame change		
-	keyboard(t5)
+	#botar IA aqui
 	clock()
 	frame_changer()
 	
 	stage()
 	pontos()
 	
+	#####
+	#mv a1,s9
+	#la t0,op_level
+	#lb t0,0(t0)
+	#jal p2_ctrl
+	#####
+	
+	
 	la t2,clocks
 	lw a0,0(t2)	
 	li a1,145	
 	li a7,101	#li a7,101 muda o valor s8
 	ecall		
-	
+	animation2()
+	li s3,121
+	beq t5,s3,Y
+	li s3,98
+	beq t5,s3,B
 	la s3,player2idle
 	mv s0,s6
 	image(s3,s0,s1,s2)
-	
+PLAYER1:
+	keyboard(t5)
+	jump()
 	animation()
-	
+KEY_CHECK:
 	li s3,100
 	beq t5,s3,D				#
 	li s3,97				#
@@ -395,6 +666,19 @@ MAIN:			#frame change
 	beq t5,s3,C
 	li s3,120
 	beq t5,s3,X
+	li s3,119
+	beq t5,s3,W
+	li s3,69
+	beq t5,s3,e
+	li s3,68
+	beq t5,s3,d
+	li s3,67
+	beq t5,s3,c
+	li s3,88
+	beq t5,s3,x
+	
+	#li s3,49
+	#beq t5,s3,_1
 IDLE1:	la s3,player1idle			#
 	mv s0,s9				#          IDLE		
 	image(s3,s0,s1,s2)			#
@@ -412,7 +696,7 @@ HIT:
 	j MAIN
 	
 D:	la s3,walk1
-	addi s0,s9,4			
+	addi s0,s9,4				
 	addi s9,s9,4
 	image(s3,s0,s1,s2)
 	j MAIN
@@ -424,24 +708,56 @@ A:	la s3,walk_1
 	j MAIN
 	
 E:	la t6,high_punch
-
 	la t1,high_punch_hurt
-	stack_push(t1)	#coloca o endereco da hurtbox do ataque na stack
-	
+	stack_push(t1)
 	conti_ani()
 	j MAIN
 
 C:	la t6,jab
-	
 	la t1,jab_hurt
-	stack_push(t1)	#coloca o endereco da hurtbox do ataque na stack
-
+	stack_push(t1)
 	conti_ani()
 	j MAIN
+	
 X:	la t6,low_punch
 	conti_ani()
 	li a6,99
 	j MAIN
+	
+W:	la t6,jump
+	conti_ani()
+	j MAIN
+	
+e:	la t6,high_kick
+	la t1,high_kick_hurt
+	stack_push(t1)
+	conti_ani()
+	j MAIN
+	
+d:	la t6,mid_kick
+	conti_ani()
+	j MAIN
+	
+c:	la t6,short_jab_kick
+	la t1,short_jab_kick_hurt
+	stack_push(t1)
+	conti_ani()
+	j MAIN
+	
+x:	la t6,foward_sweep
+	addi t6,t6,3
+	la t1,forward_sweep_hurt
+	stack_push(t1)
+	conti_ani()
+	j MAIN
+Y:	
+	la t6,high_punch2
+	conti_ani2()
+	j PLAYER1
+B: 	
+	la t6,jab2
+	conti_ani2()
+	j PLAYER1
 
-.include "\SYSTEMv21.s"
-
+#.include "levels.s"
+.include "SYSTEMv21.s"
