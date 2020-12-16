@@ -538,7 +538,6 @@ CONTI_JUMP2:
 	j WALK_CONTI
 
 WALK:	bne t5,t3,KEY_CHECK
-
 	la t6,animation_state
 	lb t1,0(t6)
 	lb t2,1(t6)
@@ -552,17 +551,14 @@ NEXT_WALK:
 	addi t1,t1,1
 	sb t1,0(t6)
 	j WS
-
 WALK_IF:	
 	li t1,1
 	sb t1,0(t6)
 	addi s9,s9,4
-
 WS:	mv s0,s9
 	advance_animation(s3,t1)
 	image(s3,s0,s1,s2)
 	j MAIN
-
 WALK_CONTI:	
 	
 .end_macro
@@ -638,8 +634,6 @@ FIM:
 	li s7,0xFF200000	#Key state
 	li s10,0xFF000000	#start of the screen
 	li s11,0xFF012C00	#end of the screen
-
-	
 	j NEXT_STAGE
 Y:	
 	la t6,high_punch2
@@ -726,9 +720,7 @@ NEXT_STAGE:
 	
 	start_animation()
 	li a2,60	
-	
-	
-	
+
 	la t1,clocks
 	li t0,30		
 	sw t0,0(t1)
@@ -790,17 +782,14 @@ KEY:	li s3,121
 	beq s3,t5,H
 	li s3,107
 	beq s3,t5,K
->>>>>>> main
 	la s3,player2idle
 	mv s0,s6
 	image(s3,s0,s1,s2)
 PLAYER1:
-
 	walk()
 	jump()
 	animation()
 KEY_CHECK:
-
 	li s3,100
 	beq t5,s3,D				#
 	li s3,97				#
@@ -821,7 +810,6 @@ KEY_CHECK:
 	beq t5,s3,c
 	li s3,88
 	beq t5,s3,x
-
 	li s3,87
 	beq t5,s3,w
 	li s3,115
@@ -833,7 +821,6 @@ KEY_CHECK:
 IDLE1:	#la t6,animation_state
 	#sb zero,0(t6)
 	la s3,player1idle			#
-
 	mv s0,s9				#          IDLE		
 	image(s3,s0,s1,s2)			#
 	j MAIN
@@ -861,7 +848,6 @@ HIT:
 	frame_changer()
 	j NEXT_STAGE
 	
-
 D:	la t6,walk
 	addi s9,s9,4
 	j KEYS
@@ -877,7 +863,6 @@ A:
 	j KEYS
 	
 E:	la t6,high_punch
-
 	j KEYS
 
 C:	la t6,jab
@@ -887,7 +872,6 @@ X:	la t6,low_punch
 	conti_ani()
 	li a6,99
 	j MAIN
-
 
 W:	la t6,jump
 	addi t6,t6,1
@@ -909,6 +893,5 @@ q:	la t6,high_back_kick
 	j KEYS
 KEYS:	conti_ani()
 	j MAIN
-  
 #.include "levels.s"
 .include "\SYSTEMv21.s"

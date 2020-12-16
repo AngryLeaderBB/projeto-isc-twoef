@@ -1,0 +1,13 @@
+Flying_kick_P2:
+
+Distância em pixels em relação a cordenada anterior (considerando no caso da F1 a cordenada do sprite logo antes de acionar o comando)
+
+F1 0,2
+F2 -1,-1
+F3 -1,-2
+F4 -2,-6
+F5 -2,-21
+F6 0,4
+F7 -2,23
+F8 2,3
+Frame incial 0,-2

@@ -1,0 +1,194 @@
+.data
+boxes_address:	.word 0,0,0,0 	#%hbox1,%cbox1,%hbox2,%cbox2
+.macro maxmin(%x,%y,%max,%min)
+	bgt %y,%x,IF_MAX
+	mv %max,%x
+	mv %min,%y
+	j END_MAX
+IF_MAX:
+	mv %max,%y
+	mv %min,%x
+END_MAX:
+.end_macro
+.macro compare_y(%tempo1,%tempo2,%tempo3,%address1,%address2,%position1,%position2)
+	lb %tempo1,0(%address1)
+	
+	li t6,320
+	sub %tempo2,%position1,s10
+	div %tempo2,%tempo2,t6
+	add %tempo1,%tempo1,%tempo2
+	
+	mv a0,%tempo2
+	li a7,1
+	ecall
+	li a0,10
+	li a7,11
+	ecall
+	
+	lb %tempo2,0(%address2)
+	
+	sub %tempo3,%position2,s10		#Correção de posição
+	div %tempo3,%tempo3,t6
+	add %tempo2,%tempo2,%tempo3
+	
+	maxmin(%tempo1,%tempo2,%tempo1,zero)
+	lb %tempo2,1(%address1)
+	
+	sub %tempo3,%position1,s10
+	div %tempo3,%tempo3,t6
+	add %tempo2,%tempo2,%tempo3
+	
+	lb %tempo3,1(%address2)
+	
+	sub s8,%position2,s10
+	div s8,s8,t6
+	add %tempo3,%tempo3,s8
+	
+	maxmin(%tempo2,%tempo3,zero,%tempo2)
+	ble %tempo1,%tempo2,YES
+	li %tempo1,0
+	j NO
+YES:	li %tempo1,1
+NO:	
+.end_macro
+
+.macro compare_x(%tempo1,%tempo2,%tempo3,%address1,%address2,%position1,%position2)
+	lb %tempo1,0(%address1)
+	
+	li t6,320
+	sub %tempo2,%position1,s10
+	rem %tempo2,%tempo2,t6
+	add %tempo1,%tempo1,%tempo2
+	
+	mv a0,%tempo2
+	li a7,1
+	ecall
+	li a0,10
+	li a7,11
+	ecall
+	
+	lb %tempo2,0(%address2)
+	
+	sub %tempo3,%position2,s10		#Correção de posição
+	rem %tempo3,%tempo3,t6
+	add %tempo2,%tempo2,%tempo3
+	
+	
+	maxmin(%tempo1,%tempo2,%tempo1,zero)
+	lb %tempo2,1(%address1)
+	
+	sub %tempo3,%position1,s10
+	rem %tempo3,%tempo3,t6
+	add %tempo2,%tempo2,%tempo3
+	
+
+	
+	lb %tempo3,1(%address2)
+	
+	sub s8,%position2,s10
+	rem s8,s8,t6
+	add %tempo3,%tempo3,s8
+	
+
+	
+	maxmin(%tempo2,%tempo3,zero,%tempo2)
+	
+	
+	
+	ble %tempo1,%tempo2,YES
+	li %tempo1,0
+	j NO
+YES:	li %tempo1,1
+NO:	
+.end_macro
+
+.macro collision()
+	la t0,boxes_address
+	
+	lw s0,0(t0)
+	lw s1,4(t0)
+	lw s2,8(t0)
+	lw s3,12(t0)
+	
+	lb t0,0(s3)
+	li t1,0
+	addi s3,s3,1
+NO_COLL:
+	beq t1,t0,NEXT_COLL
+		compare_x(t2,t3,t4,s0,s3,s9,s6)
+		addi s0,s0,2
+		addi s3,s3,2
+		compare_y(t3,t4,t5,s0,s3,s9,s6)
+		and t2,t3,t2
+		addi t1,t1,1
+		addi s0,s0,-2
+		addi s3,s3,2
+		beq t2,zero,NO_COLL
+		#TEVE COLISÃO
+		li a0,1
+		li a7,1
+		ecall
+		j NEXT_COLL
+NEXT_COLL:
+	lb t0,0(s3)
+	li t1,0
+	addi s3,s3,1
+NO_COLL1:
+	beq t1,t0,END_COLL
+		compare_x(t2,t3,t4,s2,s1,s9,s6)
+		addi s2,s2,2
+		addi s1,s1,2
+		compare_y(t3,t4,t5,s2,s1,s9,s6)
+		and t2,t3,t2
+		addi t1,t1,1
+		addi s2,s2,-2
+		addi s1,s1,2
+		beq t2,zero,NO_COLL1
+		#TEVE COLISÃO
+		j END_COLL
+
+END_COLL:	
+.end_macro
+
+.include "\animacoes\hitbox\hitbox.s"
+
+.text 
+	li s6,0xFF00C775
+	li s9,0xFF00C5D4
+	li s10,0xFF000000
+	
+
+	
+	la t0,boxes_address
+	la t1,hitbox
+	sw t1,0(t0)
+	la t1,null
+	sw t1,4(t0)
+	la t1,hitbox_null
+	sw t1,8(t0)
+	la t1,hp
+	sw t1,12(t0)
+	
+	la t0,boxes_address
+	
+	lw s0,0(t0)
+	lw s1,4(t0)
+	lw s2,8(t0)
+	lw s3,12(t0)
+	
+	lb t0,0(s3)
+	li t1,0
+	addi s3,s3,1
+	
+	compare_x(t3,t4,t5,s0,s3,s9,s6)
+	
+	
+	li a0,10
+	li a7,11
+	ecall
+	mv a0,t2
+	li a7,1
+	ecall
+	li a7,10
+	ecall
+	

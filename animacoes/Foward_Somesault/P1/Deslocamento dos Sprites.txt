@@ -1,0 +1,17 @@
+Foward_Somesault_P1:
+
+Distância em pixels em relação a cordenada anterior (considerando no caso da F1 a cordenada do sprite logo antes de acionar o comando)
+
+F1 -1,2
+F2 0,-19
+F3 -8,-4
+F4 -17,-6
+F5 -6,0
+F6 4,-1
+F7 -4,0
+F8 -16,2
+F9 -5,0
+F10 -11,13
+F11 -4,8
+F12 -1,7
+Frame inicial 1,-2
