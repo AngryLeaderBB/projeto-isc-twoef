@@ -553,7 +553,7 @@ NEXT_WALK:
 	sb t1,0(t6)
 	j WS
 WALK_IF:	
-	li t1,1
+	li t1,2
 	sb t1,0(t6)
 	addi s9,s9,4
 WS:	mv s0,s9
