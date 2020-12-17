@@ -1,5 +1,4 @@
 .data
-.include "yingyang.s"
 pontos: .byte 0,0
 stages: .byte 2
 clocks: .word 0 , 0 
@@ -11,51 +10,54 @@ op_level: .byte 0
 NOTAS: .word 62,270,62,270,59,270,59,270,57,270,57,270,59,270,59,270,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,600
 fases: .word -1
 dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN"," 6TH DAN"," 7TH DAN"," 8TH DAN"," 9TH DAN","10TH DAN"
-.include "\animacoes\jump\jump.s"
-.include "\animacoes\high_punch\high_punch.s"
-.include "\animacoes\high_punch\high_punch2.s"
-.include "\animacoes\jab\jab.s"
-.include "\animacoes\jab\jab2.s"
-.include "\animacoes\kick\kick.s"
-.include "\animacoes\kick\kick2.s"
-.include "\animacoes\player1idle.s"
+.include "animacoes/jump/jump.s"
+.include "animacoes/high_punch/high_punch.s"
+.include "animacoes/high_punch/high_punch2.s"
+.include "animacoes/jab/jab.s"
+.include "animacoes/jab/jab2.s"
+.include "animacoes/kick/kick.s"
+.include "animacoes/kick/kick2.s"
+.include "animacoes/player1idle.s"
 .include "stage.s"
-.include "\animacoes\crounch\low_punch.s"
-.include "\animacoes\walk\walk.s"
-.include "\animacoes\walk\walk_1.s"
-.include "\animacoes\start\stance1.s"
-.include "\animacoes\foward_sweep\foward_sweep.s"
-.include "\animacoes\Flying_kick\flying_kick.s"
-.include "\animacoes\death\death2.s"
-.include "\animacoes\crounch\low_punch2.s"
-.include "\animacoes\guard\guard.s"
-.include "\animacoes\backwards_sweep\back_sweep.s"
-.include "\animacoes\round_house\round_house.s"
-.include "\animacoes\high_back_kick\high_back_kick.s"
-.include "\animacoes\walk\walk2.s"
+.include "animacoes/crounch/low_punch.s"
+.include "animacoes/walk/walk.s"
+.include "animacoes/walk/walk_1.s"
+.include "animacoes/start/stance1.s"
+.include "animacoes/foward_sweep/foward_sweep.s"
+.include "animacoes/Flying_kick/flying_kick.s"
+.include "animacoes/death/death2.s"
+.include "animacoes/crounch/low_punch2.s"
+.include "animacoes/guard/guard.s"
+.include "animacoes/backwards_sweep/back_sweep.s"
+.include "animacoes/round_house/round_house.s"
+.include "animacoes/high_back_kick/high_back_kick.s"
+.include "animacoes/walk/walk2.s"
 .include "hitboxes.s"
-.include "\MACROSv21.s"
+.include "yingyang.s"
+.include "MACROSv21.s"
 
 .macro draw_line(%x1,%x2,%y1,%y2)
 	mv a0,%x1
 	mv a1,%y1
 	mv a2,%x2
 	mv a3,%y2
-	li a4,0xFF
-	li a5,0
-	li a7,47
 	ecall
 	li a5,1
 	ecall
 .end_macro
 
 .macro draw_hitbox(%box,%pos)
-	stack_push(a0)
-	stack_push(a1)
-	stack_push(a2)
-	stack_push(a3)
-	stack_push(a4)
-	stack_push(a5)
+	jal PUSH
+	mv a0,a1
+	jal PUSH
+	mv a0,a2
+	jal PUSH
+	mv a0,a3
+	jal PUSH
+	mv a0,a4
+	jal PUSH
+	mv a0,a4
+	jal PUSH
 	lh t0,0(%box)
 	lh t1,2(%box)
 	lh t2,4(%box)
@@ -71,16 +73,24 @@ dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN","
 	div t4,t4,t5
 	add t2,t2,t4
 	add t3,t3,t4
+	li a4,0xFF
+	li a5,0
+	li a7,47
 	draw_line(t0,t1,t2,t2)
 	draw_line(t0,t0,t2,t3)
 	draw_line(t1,t1,t2,t3)
 	draw_line(t0,t1,t3,t3)
-	stack_pop(a5)
-	stack_pop(a4)
-	stack_pop(a3)
-	stack_pop(a2)
-	stack_pop(a1)
-	stack_pop(a0)
+	jal POP
+	mv a5,a0
+	jal POP
+	mv a4,a0
+	jal POP
+	mv a3,a0
+	jal POP
+	mv a2,a0
+	jal POP
+	mv a1,a0
+	jal POP
 .end_macro
 
 .macro get_op_level()
@@ -88,16 +98,6 @@ dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN","
 	ecall
 	la t0,op_level
 	sb a0,0(t0)
-.end_macro
-
-.macro stack_push(%reg)
-	addi sp,sp,-8
-	sw %reg,0(sp)
-.end_macro
-
-.macro stack_pop(%reg)
-	lw %reg,0(sp)
-	addi sp,sp,8
 .end_macro
 
 .macro conti_ani()
@@ -424,11 +424,12 @@ CONTI_IF:
 	lb t1,0(t6)
 	lb t2,1(t6)
 	bne t1,t2,NO_HIT
-	stack_pop(s1)
+	jal POP
+	mv s1,a0
         la s2,p2_hitbox
         check_hitbox(s1,s2,s9,s6)
-        draw_hitbox(s1,s9)
-        draw_hitbox(s2,s6)
+        #draw_hitbox(s1,s9)
+        #draw_hitbox(s2,s6)
 	j HIT
 NO_HIT:
 	j MAIN
@@ -863,12 +864,18 @@ A:
 	j KEYS
 	
 E:	la t6,high_punch
+	la a0,high_punch_hurt
+	jal PUSH
 	j KEYS
 
 C:	la t6,jab
+	la a0,jab_hurt
+	JAL PUSH
 	j KEYS
 
 X:	la t6,low_punch
+	la a0,low_punch_hurt
+	jal PUSH
 	conti_ani()
 	li a6,99
 	j MAIN
@@ -893,5 +900,16 @@ q:	la t6,high_back_kick
 	j KEYS
 KEYS:	conti_ani()
 	j MAIN
+	
+PUSH:
+	addi sp,sp,-8
+	sw a0,0(sp)
+	ret
+
+POP:
+	lw a0,0(sp)
+	addi sp,sp,8
+	ret
+
 #.include "levels.s"
-.include "\SYSTEMv21.s"
+.include "SYSTEMv21.s"
