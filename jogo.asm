@@ -204,7 +204,7 @@ END_YY:
     lh t3,6(%hit)
     
     #xor t4,%phurt,s10
-    sub t4,s10,%phurt
+    sub t4,%phurt,s10
     
     li t5,320
     div t4,t4,t5
@@ -212,7 +212,7 @@ END_YY:
     add t1,t1,t4
     
     #xor t4,%phit,s10
-    sub t4,s10,%phit
+    sub t4,%phit,s10
     
     div t4,t4,t5
     add t2,t2,t4
@@ -227,14 +227,14 @@ END_YY:
     lh t3,2(%hit)
     
     #xor t4,%phurt,s10
-    sub t4,s10,%phurt
+    sub t4,%phurt,s10
     li t5,320
     rem t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
     
     #xor t4,%phit,s10
-    sub t4,s10,%phit
+    sub t4,%phit,s10
     div t4,t4,t5
     add t2,t2,t4
     add t3,t3,t4
