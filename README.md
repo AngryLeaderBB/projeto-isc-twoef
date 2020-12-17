@@ -1,11 +1,13 @@
 Implementação do jogo The Way of Exploding Fist em RISC-V assembly usando o RARS.
 Para jogar, rodar o arquivo jogo.asm.
 
-Comandos: Q  W  E
+Comandos:
 
-          A     D
+Q  W  E
+
+A     D
           
-          Z  X  C
+Z  X  C
           
 Fire button: shift
 
