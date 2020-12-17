@@ -23,19 +23,28 @@
 
 .text
 p2_ctrl:
-	sub t6,s6,s9	
-	
+	li t2,320
+	rem t3,s6,t2
+	rem t4,s9,t2
+	sub t6,t3,t4	
+
 	li t1,0
 	beq t0,t1,level0
 	li t1,1
 	beq t0,t1,level1
 	
 level0:	addi t0,t0,3
-	randint(t1,t0)
+	randint(t5,t0)
+	ret
 	
-level1:	
+level1:	li t2,40
+	bgt t6,t2,p2wl
+	blt t6,t2,p2wr
+	ret
 
 
+p2wl:	li t5,104
+	ret
 
-
-p2_end:	ret
+p2wr:	li t5,107
+	ret
