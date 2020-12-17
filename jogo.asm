@@ -553,7 +553,7 @@ NEXT_WALK:
 	sb t1,0(t6)
 	j WS
 WALK_IF:	
-	li t1,2
+	li t1,1
 	sb t1,0(t6)
 	addi s9,s9,4
 WS:	mv s0,s9
@@ -680,7 +680,7 @@ KEYS1:
 ###########
 NEXT_STAGE:
 	theme()
-	#get_op_level()
+	get_op_level()
 	la t0,animation_state
 	sb zero,0(t0)
 	sb zero,2(t0)
@@ -736,9 +736,11 @@ NEXT_STAGE:
 ########
 	
 MAIN:			#frame change		
-
-	#botar IA aqui
-	keyboard(t5)
+	mv a1,s9
+	la t0,op_level
+	lb t0,0(t0)
+	jal p2_ctrl
+	
 	dan()
 	clock()
 	frame_changer()
@@ -746,10 +748,7 @@ MAIN:			#frame change
 	pontos()
 	
 	#####
-	#mv a1,s9
-	#la t0,op_level
-	#lb t0,0(t0)
-	#jal p2_ctrl
+	#
 	#####
 	
 	
@@ -787,6 +786,7 @@ KEY:	li s3,121
 	mv s0,s6
 	image(s3,s0,s1,s2)
 PLAYER1:
+	keyboard(t5)
 	walk()
 	jump()
 	animation()
@@ -911,5 +911,5 @@ POP:
 	addi sp,sp,8
 	ret
 
-#.include "levels.s"
+.include "levels.s"
 .include "SYSTEMv21.s"
