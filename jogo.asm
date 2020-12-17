@@ -496,11 +496,6 @@ CONTI_JUMP:
 .end_macro
 
 .macro jump2()
-	#li t6,117
-	#beq s5,t6,JUMP2 
-	#li t6,85
-	#beq s5,t6,JUMP2
-	#j CONTI_JUMP2
 JUMP2:	la t6,animation_state
 	lb t1,2(t6)
 	lb t2,3(t6)
@@ -514,11 +509,17 @@ JUMP2:	la t6,animation_state
 	bge t1,t2,KEY
 	
 	srai t2,t2,1
-	
+	beq t1,t2,HIT2
 	bgt t1,t2,IF_JUMP2
 	
 	mv t3,t1
 	j ELSE_JUMP2
+	
+HIT2:	#jal POP
+	#mv s1,a0
+        #la s2,p1_hitbox
+        #check_hitbox(s1,s2,s6,s9)	#####voltar#####
+	
 IF_JUMP2:
 	slli t2,t2,1
 	sub t3,t2,t1
@@ -638,9 +639,13 @@ FIM:
 	j NEXT_STAGE
 Y:	
 	la t6,high_punch2
+	#la a0,hp_p2_hurt
+	#jal PUSH
 	j KEYS1
 B: 	
 	la t6,jab2
+	#la a0,jab_p2_hurt
+	#jal PUSH
 	j KEYS1
 u:
 	la t6,flying_kick2
@@ -746,11 +751,6 @@ MAIN:			#frame change
 	frame_changer()
 	stage()
 	pontos()
-	
-	#####
-	#
-	#####
-	
 	
 	la t2,clocks
 	lw a0,0(t2)	
