@@ -7,6 +7,8 @@ cc: .byte 0
 current_animation: .word 0,0
 animation_state: .byte 0,0,0,0
 op_level: .byte 0
+p1_hurt: .word 0
+p2_hurt: .word 0
 NOTAS: .word 62,270,62,270,59,270,59,270,57,270,57,270,59,270,59,270,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,70,62,600
 fases: .word -1
 dan: .string "  NOVICE"," 1ST DAN"," 2ND DAN"," 3RD DAN"," 4TH DAN"," 5TH DAN"," 6TH DAN"," 7TH DAN"," 8TH DAN"," 9TH DAN","10TH DAN"
@@ -203,7 +205,6 @@ END_YY:
     lh t2,4(%hit)
     lh t3,6(%hit)
     
-    #xor t4,%phurt,s10
     sub t4,%phurt,s10
     
     li t5,320
@@ -211,7 +212,6 @@ END_YY:
     add t0,t0,t4
     add t1,t1,t4
     
-    #xor t4,%phit,s10
     sub t4,%phit,s10
     
     div t4,t4,t5
@@ -226,14 +226,12 @@ END_YY:
     lh t2,0(%hit)
     lh t3,2(%hit)
     
-    #xor t4,%phurt,s10
     sub t4,%phurt,s10
     li t5,320
     rem t4,t4,t5
     add t0,t0,t4
     add t1,t1,t4
     
-    #xor t4,%phit,s10
     sub t4,%phit,s10
     div t4,t4,t5
     add t2,t2,t4
@@ -424,12 +422,10 @@ CONTI_IF:
 	lb t1,0(t6)
 	lb t2,1(t6)
 	bne t1,t2,NO_HIT
-	jal POP
-	mv s1,a0
+	la a0,p1_hurt
+	lw s1,0(a0)
         la s2,p2_hitbox
         check_hitbox(s1,s2,s9,s6)
-        #draw_hitbox(s1,s9)
-        #draw_hitbox(s2,s6)
 	j HIT
 NO_HIT:
 	j MAIN
@@ -515,10 +511,10 @@ JUMP2:	la t6,animation_state
 	mv t3,t1
 	j ELSE_JUMP2
 	
-HIT2:	#jal POP
-	#mv s1,a0
-        #la s2,p1_hitbox
-        #check_hitbox(s1,s2,s6,s9)	#####voltar#####
+HIT2:	la a0,p2_hurt
+	lw s1,0(a0)
+        la s2,p1_hitbox
+        check_hitbox(s1,s2,s6,s9)	#####voltar#####
 	
 IF_JUMP2:
 	slli t2,t2,1
@@ -639,13 +635,15 @@ FIM:
 	j NEXT_STAGE
 Y:	
 	la t6,high_punch2
-	#la a0,hp_p2_hurt
-	#jal PUSH
+	la a0,hp_p2_hurt
+	la a1,p2_hurt
+	sw a0,0(a1)
 	j KEYS1
 B: 	
 	la t6,jab2
-	#la a0,jab_p2_hurt
-	#jal PUSH
+	la a0,jab_p2_hurt
+	la a1,p2_hurt
+	sw a0,0(a1)
 	j KEYS1
 u:
 	la t6,flying_kick2
@@ -737,7 +735,7 @@ NEXT_STAGE:
 	li a0,30	
 	li a1,145	
 	li a7,101
-	ecall
+	#ecall
 ########
 	
 MAIN:			#frame change		
@@ -756,7 +754,7 @@ MAIN:			#frame change
 	lw a0,0(t2)	
 	li a1,145
 	li a7,101	#li a7,101 muda o valor s8
-	ecall		
+	#ecall		
 	
 	walk2()
 	jump2()	
@@ -865,17 +863,19 @@ A:
 	
 E:	la t6,high_punch
 	la a0,high_punch_hurt
-	jal PUSH
+	la a1,p1_hurt
+	sw a0,0(a1)
 	j KEYS
 
 C:	la t6,jab
 	la a0,jab_hurt
-	JAL PUSH
+	la a1,p1_hurt
+	sw a0,0(a1)
 	j KEYS
 
 X:	la t6,low_punch
-	la a0,low_punch_hurt
-	jal PUSH
+	la a1,p1_hurt
+	sw a0,0(a1)
 	conti_ani()
 	li a6,99
 	j MAIN
@@ -912,4 +912,4 @@ POP:
 	ret
 
 .include "levels.s"
-.include "SYSTEMv21.s"
+#.include "SYSTEMv21.s"
